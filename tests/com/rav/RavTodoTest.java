@@ -46,4 +46,15 @@ public class RavTodoTest {
 		System.out.println(tasks.getConfigPath());
 		assertEquals("/home/rav/Nextcloud/Todo/todo.txt", tasks.getConfigPath());
 	}
+
+	@Test
+	@DisplayName("Check if todo file was read.")
+	public void readTodoFileTest(){
+		try {
+			tasks.readTodoFile();
+		} catch (IOException e) {
+			fail("Couldn't read file");
+			e.printStackTrace();
+		}
+	}
 }

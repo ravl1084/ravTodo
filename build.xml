@@ -8,27 +8,27 @@
     <path id="classpath.base" />
 
     <path id="classpath.test">
-	<fileset dir="${libdir}">
-	    <include name="*.jar" />
-	</fileset>
-	<pathelement location="${builddir}" />
-	<path refid="classpath.base" />
+        <fileset dir="${libdir}">
+            <include name="*.jar" />
+        </fileset>
+        <pathelement location="${builddir}" />
+        <path refid="classpath.base" />
     </path>
 
     <target name="clean">
-	<delete verbose="${full-compile}">
-	    <fileset dir="${testdir}" includes="**/*.class" />
-	    <fileset dir="${builddir}" includes="**/*.class" />
-	</delete>
+        <delete verbose="${full-compile}">
+            <fileset dir="${testdir}" includes="**/*.class" />
+            <fileset dir="${builddir}" includes="**/*.class" />
+        </delete>
     </target>
 
     <target name="compile" depends="clean">
-	<javac includeantruntime="false" srcdir="${srcdir}" destdir="${builddir}" verbose="${full-compile}">
-	    <classpath refid="classpath.test" />
-	</javac>
-	<javac includeantruntime="false" srcdir="${testdir}" destdir="${builddir}" verbose="${full-compile}">
-	    <classpath refid="classpath.test" />
-	</javac>
+        <javac includeantruntime="false" srcdir="${srcdir}" destdir="${builddir}" verbose="${full-compile}">
+            <classpath refid="classpath.test" />
+        </javac>
+        <javac includeantruntime="false" srcdir="${testdir}" destdir="${builddir}" verbose="${full-compile}">
+            <classpath refid="classpath.test" />
+        </javac>
     </target>
 
     <target name="tests" depends="compile">
@@ -38,6 +38,10 @@
         <junitlauncher printsummary="false">
             <classpath refid="classpath.test" />
             <test name="com.rav.RavTodoTest">
+                <listener type="legacy-plain" sendSysOut="true" sendSysErr="true" />
+                <listener classname="com.rav.TestListener" />
+            </test>
+            <test name="com.rav.RavTodoItemTest">
                 <listener type="legacy-plain" sendSysOut="true" sendSysErr="true" />
                 <listener classname="com.rav.TestListener" />
             </test>

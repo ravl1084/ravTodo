@@ -1,9 +1,11 @@
 package com.rav;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.Scanner;
 
 public class RavTodo {
 	private String message;
@@ -43,6 +45,27 @@ public class RavTodo {
 	public String getConfigPath(){
 		return this.properties.getProperty("todo.path");
 	}
+
+	//TODO: read todo file
+	public void readTodoFile() throws IOException{
+		File todoFile = new File(getConfigPath());
+		Scanner todoReader = new Scanner(todoFile);
+
+		while (todoReader.hasNext()){
+			String taskLine = todoReader.nextLine();
+			System.out.println(taskLine);
+		}
+
+		todoReader.close();
+	}
+
+    //TODO: implement 'ls'
+
+    //TODO: implement 'do'
+
+    //TODO: implement 'archive'
+
+    //TODO: implement 'add'
 }
 
 
