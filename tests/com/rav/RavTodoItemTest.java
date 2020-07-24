@@ -8,14 +8,14 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RavTodoItemTest {
     private RavTodoItem todoItem;
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
-    private final PrintStream originalOut = System.out;
-    private final PrintStream originalErr = System.err;
+    private final static PrintStream originalOut = System.out;
+    private final static PrintStream originalErr = System.err;
 
     @BeforeEach
     public void init() {
@@ -25,7 +25,7 @@ public class RavTodoItemTest {
     }
 
     @AfterAll
-    public void shutdown() {
+    public static void shutdown() {
         System.setOut(originalOut);
         System.setErr(originalErr);
     }
@@ -43,9 +43,28 @@ public class RavTodoItemTest {
     }
 
     @Test
+    @DisplayName("Validate context can be read")
+    public void readContextTest(){
+        assertEquals("@now", todoItem.getContext());
+    }
+
+    @Test
     @DisplayName("Validate display of item")
     public void displayItemTest() {
         this.todoItem.displayItem();
-        assertEquals("1 do something +good @now", outContent.toString());
+        assertEquals("1 do something +good @now\n", outContent.toString());
+    }
+
+    @Test
+    @DisplayName("Validate term match")
+    public void positiveTermMatch() {
+        String[] terms1 = {"+good", "@later"};
+        String[] terms2 = {"+bad", "@now"};
+        String[] terms3 = {"do", "+bad"};
+        String[] terms4 = {"+bad", "@later"};
+        assertTrue(this.todoItem.matchesTerms(terms1));
+        assertTrue(this.todoItem.matchesTerms(terms2));
+        assertTrue(this.todoItem.matchesTerms(terms3));
+        assertFalse(this.todoItem.matchesTerms(terms4));
     }
 }

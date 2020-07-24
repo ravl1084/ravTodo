@@ -4,30 +4,30 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.Scanner;
+import java.util.*;
+import java.util.function.Consumer;
 
-public class RavTodo {
+public class RavTodo implements Iterable{
     private Properties properties;
 
     private static ArrayList<RavTodoItem> todoList = new ArrayList<>();
 
     public static void main(String args[]) {
+        RavTodo todo = new RavTodo();
         if (args.length > 0){
             switch (args[0]) {
-                case "ls": {
+                case "ls":
                     if (args.length > 1) {
                         String[] terms = Arrays.copyOfRange(args, 1,args.length);
-                        listTodoItems(terms);
+                        todo.listTodoItems(terms);
                     } else {
-                        listAllTodoItems();
+                        todo.listAllTodoItems();
                     }
-                };
+                    break;
 
                 default: {
                     System.out.println("Unknown command.");
+                    printUsage();
                 }
 
             }
@@ -35,31 +35,32 @@ public class RavTodo {
         } else {
             printUsage();
         }
-        RavTodo todo = new RavTodo();
-        try {
-            todo.readConfig();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void listAllTodoItems() {
-        //TODO: implement display of all valid items
-        for (int i = 0; i < todoList.size(); i++){
-            todoList.get(i).displayItem();
-        }
-    }
-
-    private static void listTodoItems(String[] terms) {
-        //TODO: implement term search
     }
 
     public RavTodo() {
         this.properties = new Properties();
         try {
             readConfig();
+            //System.out.println("Config found and loaded!");
+            readTodoFile();
+            //System.out.println("Todo file found and loaded!");
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void listAllTodoItems() {
+        for (RavTodoItem t : todoList) {
+            t.displayItem();
+        }
+    }
+
+    private void listTodoItems(String[] terms) {
+        //TODO: implement term search
+        for (RavTodoItem t : todoList){
+            if (t.matchesTerms(terms)){
+                t.displayItem();
+            }
         }
     }
 
@@ -99,11 +100,19 @@ public class RavTodo {
         System.out.println("   ls");
     }
 
+    @Override
+    public Iterator iterator() {
+        return todoList.iterator();
+    }
+
+
     //TODO: implement 'do'
 
     //TODO: implement 'archive'
 
     //TODO: implement 'add'
+
+    //TODO: implement threshold date filtering
 }
 
 
