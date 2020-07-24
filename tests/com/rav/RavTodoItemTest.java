@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,10 +18,11 @@ public class RavTodoItemTest {
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
     private final static PrintStream originalOut = System.out;
     private final static PrintStream originalErr = System.err;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat();
 
     @BeforeEach
     public void init() {
-        this.todoItem = new RavTodoItem(1,"do something +good @now");
+        this.todoItem = new RavTodoItem(1,"2020-07-24 do something +good @now");
         System.setOut(new PrintStream(outContent));
         System.setErr(new PrintStream(errContent));
     }
@@ -33,7 +36,7 @@ public class RavTodoItemTest {
     @Test
     @DisplayName("Validate creation of todo item")
     public void createItemTest(){
-        assertEquals("do something +good @now", this.todoItem.getRawLine());
+        assertEquals("2020-07-24 do something +good @now", this.todoItem.getRawLine());
     }
 
     @Test
@@ -52,7 +55,7 @@ public class RavTodoItemTest {
     @DisplayName("Validate display of item")
     public void displayItemTest() {
         this.todoItem.displayItem();
-        assertEquals("1 do something +good @now\n", outContent.toString());
+        assertEquals("1 2020-07-24 do something +good @now\n", outContent.toString());
     }
 
     @Test
@@ -66,5 +69,15 @@ public class RavTodoItemTest {
         assertTrue(this.todoItem.matchesTerms(terms2));
         assertTrue(this.todoItem.matchesTerms(terms3));
         assertFalse(this.todoItem.matchesTerms(terms4));
+    }
+
+    @Test
+    @DisplayName("Validate reading of Created Date")
+    public void readCreatedDateTest() {
+        try {
+            assertEquals(dateFormat.parse("2020-07-24"), todoItem.getCreatedDate());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
     }
 }

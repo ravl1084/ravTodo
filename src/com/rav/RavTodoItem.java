@@ -1,6 +1,9 @@
 package com.rav;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -9,12 +12,19 @@ public class RavTodoItem {
     private int index;
     private ArrayList<String> projects = new ArrayList<>();
     private ArrayList<String> contexts = new ArrayList<>();
+    private Date createdDate;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat();
 
     public RavTodoItem(int index, String str){
         this.rawLine = str;
         this.index = index;
         readProjects();
         readContexts();
+        try {
+            readCreatedDate();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
     }
 
     public String getRawLine() {
@@ -75,7 +85,22 @@ public class RavTodoItem {
         return this.contexts.get(0);
     }
 
-    //TODO: implement CreatedDate
+    public void readCreatedDate() throws ParseException {
+        String searchPattern = "^(\\d{4}-\\d{2}-\\d{2})\\s+";
+
+        Pattern regex = Pattern.compile(searchPattern);
+        Matcher m = regex.matcher(rawLine);
+
+        if (m.find()) {
+            createdDate = dateFormat.parse(m.group(1));
+        } else {
+            createdDate = null;
+        }
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
 
     //TODO: implement Complete
 
