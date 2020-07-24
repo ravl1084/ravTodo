@@ -17,15 +17,7 @@ public class RavTodoTest {
 	public void init(){
 		this.tasks = new RavTodo();
 	}
-	/**
-	 * Initial test of environment setup
-	 *  
-	 **/
-	@Test
-	@DisplayName("Initial test of environment setup")
-	public void mainTest() {
-		assertEquals("I got it to work!", tasks.getMessage());
-	}
+
 
 	@Test
 	@DisplayName("Validate reading config file")
@@ -52,6 +44,9 @@ public class RavTodoTest {
 	public void readTodoFileTest(){
 		try {
 			tasks.readTodoFile();
+			if (tasks.getTodoCount() == 0) {
+				fail("File contents were not loaded");
+			}
 		} catch (IOException e) {
 			fail("Couldn't read file");
 			e.printStackTrace();

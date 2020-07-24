@@ -6,10 +6,12 @@ import java.util.regex.Pattern;
 
 public class RavTodoItem {
     private String rawLine;
+    private int index;
     private ArrayList<String> projects = new ArrayList<>();
 
-    public RavTodoItem(String str){
+    public RavTodoItem(int index, String str){
         this.rawLine = str;
+        this.index = index;
         readProjects();
     }
 
@@ -35,4 +37,20 @@ public class RavTodoItem {
     public String getProject() {
         return this.projects.get(0);
     }
+
+    public void displayItem() {
+        System.out.println(this.index + " " + getRawLine());
+    }
+
+    //TODO: implement Contexts
+
+    //TODO: implement CreatedDate
+
+    //TODO: implement Complete
+
+    //TODO: implement Priority
+
+    //TODO: implement Threshold Date
+
+    //TODO: implement Due Date
 }
