@@ -55,7 +55,6 @@ public class RavTodo implements Iterable{
     }
 
     private void listTodoItems(String[] terms) {
-        //TODO: implement term search
         for (RavTodoItem t : todoList){
             if (t.matchesTerms(terms)){
                 t.displayItem();

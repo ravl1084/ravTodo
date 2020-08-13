@@ -13,15 +13,24 @@ public class RavTodoItem {
     private ArrayList<String> projects = new ArrayList<>();
     private ArrayList<String> contexts = new ArrayList<>();
     private Date createdDate;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat();
+    private Date thresholdDate;
+    private Date dueDate;
+    private Date completeDate;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private boolean isComplete = false;
+    private String priority;
 
     public RavTodoItem(int index, String str){
         this.rawLine = str;
         this.index = index;
         readProjects();
         readContexts();
+        readCompleteMark();
+        readPriority();
         try {
             readCreatedDate();
+            readThreshold();
+            readDue();
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -69,7 +78,6 @@ public class RavTodoItem {
         return this.projects.get(0);
     }
 
-    //TODO: implement Contexts
     public void readContexts(){
         String contextPattern = "(.*\\s)(\\@\\w+)(.*)";
 
@@ -81,18 +89,18 @@ public class RavTodoItem {
         }
     }
 
-    public String getContext() {
-        return this.contexts.get(0);
+    public ArrayList<String> getContext() {
+        return this.contexts;
     }
 
     public void readCreatedDate() throws ParseException {
-        String searchPattern = "^(\\d{4}-\\d{2}-\\d{2})\\s+";
+        String searchPattern = "^(x )*(\\([A-Z]\\) )*(\\d{4}-\\d{2}-\\d{2})\\s+.*";
 
         Pattern regex = Pattern.compile(searchPattern);
         Matcher m = regex.matcher(rawLine);
 
         if (m.find()) {
-            createdDate = dateFormat.parse(m.group(1));
+            createdDate = dateFormat.parse(m.group(3));
         } else {
             createdDate = null;
         }
@@ -102,11 +110,64 @@ public class RavTodoItem {
         return createdDate;
     }
 
-    //TODO: implement Complete
+    public void readCompleteMark() {
+        String searchPattern = "^x ";
 
-    //TODO: implement Priority
+        Pattern regex = Pattern.compile(searchPattern);
+        Matcher matcher = regex.matcher(rawLine);
 
-    //TODO: implement Threshold Date
+        isComplete = matcher.find();
+    }
 
-    //TODO: implement Due Date
+    public boolean isTodoComplete() {
+        return isComplete;
+    }
+
+    public void readPriority() {
+        String searchPattern = "^\\(([a-zA-Z])\\)";
+
+        Pattern regex = Pattern.compile(searchPattern);
+        Matcher matcher = regex.matcher(rawLine);
+
+        if (matcher.find()){
+            priority = matcher.group(1);
+        } else {
+            System.out.println("No Match!");
+        }
+    }
+
+    public String getPriority(){
+        return priority;
+    }
+
+    public void readThreshold() throws ParseException {
+        String searchPattern = ".*\\s+t:(\\d{4}-\\d{2}-\\d{2}).*";
+
+        Pattern regex = Pattern.compile(searchPattern);
+        Matcher matcher = regex.matcher(rawLine);
+
+        if (matcher.find()){
+            thresholdDate = dateFormat.parse(matcher.group(1));
+        }
+    }
+
+    public Date getThresholdDate() {
+        return thresholdDate;
+    }
+
+    public void readDue() throws ParseException {
+        String searchPattern = ".*\\s+due:(\\d{4}-\\d{2}-\\d{2}).*";
+
+        Pattern regex = Pattern.compile(searchPattern);
+        Matcher matcher = regex.matcher(rawLine);
+
+        if (matcher.find()){
+            dueDate = dateFormat.parse(matcher.group(1));
+        }
+    }
+
+    public Date getDueDate() {
+        return dueDate;
+    }
+
 }
