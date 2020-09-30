@@ -50,10 +50,13 @@ public class RavTodoItem {
             String pri2 = t1.getPriority();
             LocalDate due1 = ravTodoItem.getDueDate();
             LocalDate due2 = t1.getDueDate();
+            int comp1 = ravTodoItem.isTodoComplete()?-5000:50;
+            int comp2 = t1.isTodoComplete()?-5000:50;
             int priCompare = pri1.compareTo(pri2);
             int dueCompare = due1.compareTo(due2);
+            int compCompare = comp2 - comp1;
 
-            return priCompare+dueCompare;
+            return priCompare+dueCompare + compCompare;
         }
     };
 

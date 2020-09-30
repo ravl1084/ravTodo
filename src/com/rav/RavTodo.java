@@ -46,6 +46,14 @@ public class RavTodo implements Iterable{
                     }
                     break;
 
+                case "archive":
+                    try {
+                        todo.archiveTasks();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+
                 default: {
                     System.out.println("Unknown command.");
                     todo.printUsage();
@@ -81,6 +89,7 @@ public class RavTodo implements Iterable{
     }
 
     private void listTodoItems(String[] terms) {
+        Collections.sort(todoList, RavTodoItem.PriDueComparator);
         for (RavTodoItem t : todoList){
             if (t.matchesTerms(terms)){
                 t.displayItem();
@@ -130,7 +139,6 @@ public class RavTodo implements Iterable{
     }
 
 
-    //TODO: implement 'do'
     public void doTask(int n) throws IOException {
         try {
             System.out.println("Searching for todo " + n);
@@ -170,7 +178,35 @@ public class RavTodo implements Iterable{
         }
     }
 
-    //TODO: implement 'archive'
+    public void archiveTasks() throws IOException {
+        File todoFile = new File(properties.getProperty("todo.path") + "/todo.txt");
+        Path path = todoFile.toPath();
+        Files.move(path, path.resolveSibling("todo.bak"), REPLACE_EXISTING);
+        File file = new File(properties.getProperty("todo.path") + "/done.txt");
+        path = file.toPath();
+        Files.copy(path, path.resolveSibling("done.bak"), REPLACE_EXISTING);
+        FileWriter newFile = new FileWriter(properties.getProperty("todo.path") + "/todo.txt");
+        FileWriter doneFile = new FileWriter(properties.getProperty("todo.path") + "/done.txt", true);
+        PrintWriter outDone = new PrintWriter(doneFile);
+        PrintWriter outTodo = new PrintWriter(newFile);
+
+        Iterator<RavTodoItem> iter = todoList.iterator();
+        RavTodoItem t = null;
+        int n = 0;
+        while (iter.hasNext()){
+           t = iter.next();
+           if (t.isTodoComplete()) {
+               outDone.println(t.getRawLine());
+               n++;
+           } else {
+               outTodo.println(t.getRawLine());
+           }
+        }
+
+        System.out.println("Archived " + n + " tasks.");
+        outDone.close();
+        outTodo.close();
+    }
 
     //TODO: implement 'add'
 

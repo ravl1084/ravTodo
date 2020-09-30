@@ -3,6 +3,8 @@
     <property name="builddir" location="build" />
     <property name="srcdir" location="src" />
     <property name="libdir" location="lib" />
+    <property name="dist.dir" location="dist" />
+    <property name="dist.lib.dir" location="dist/lib" />
     <property name="full-compile" value="false" />
 
     <path id="classpath.base" />
@@ -66,5 +68,38 @@
             <arg value="do" />
             <arg value="87" />
         </java>
+    </target>
+
+    <!-- constructs the external libraries classpath name -->
+    <pathconvert property="classpath.name" pathsep=" ">
+        <path refid="classpath.test" />
+        <mapper>
+            <chainedmapper>
+                <flattenmapper />
+                <globmapper from="*.jar" to="lib/*.jar" />
+            </chainedmapper>
+        </mapper>
+    </pathconvert>
+
+    <target name="copy-dependencies">
+        <copy todir="${dist.lib.dir}">
+            <fileset dir="${libdir}" includes="**/*.jar" excludes="**/*sources.jar, **/*javadoc.jar" />
+        </copy>
+    </target>
+
+    <!-- jar it, and declares the ext libraries in manifest.mf file -->
+    <target name="jar" depends="compile, copy-dependencies" description="package, output to JAR">
+
+        <echo message="classpath.name : ${classpath.name} " />
+
+        <mkdir dir="${dist.dir}" />
+        <mkdir dir="${dist.lib.dir}" />
+
+        <jar jarfile="${dist.dir}/rtj.jar" basedir="${builddir}">
+            <manifest>
+                <attribute name="Main-Class" value="com.rav.RavTodo" />
+                <attribute name="Class-Path" value="${classpath.name}" />
+            </manifest>
+        </jar>
     </target>
 </project>
