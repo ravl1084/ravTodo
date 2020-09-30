@@ -1,10 +1,14 @@
 package com.rav;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class RavTodo implements Iterable{
     private Properties properties;
@@ -13,6 +17,9 @@ public class RavTodo implements Iterable{
 
     public static void main(String args[]) {
         RavTodo todo = new RavTodo();
+        String numString = "\\d+";
+        Pattern numRegex = Pattern.compile(numString);
+        Matcher matcher;
         if (args.length > 0){
             switch (args[0]) {
                 case "ls":
@@ -24,15 +31,30 @@ public class RavTodo implements Iterable{
                     }
                     break;
 
+                case "do":
+                    if (args.length > 1) {
+                        matcher = numRegex.matcher(args[1]);
+                        if (matcher.find()){
+                            try {
+                                todo.doTask(Integer.valueOf(args[1]));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } else {
+                        todo.printUsage();
+                    }
+                    break;
+
                 default: {
                     System.out.println("Unknown command.");
-                    printUsage();
+                    todo.printUsage();
                 }
 
             }
 
         } else {
-            printUsage();
+            todo.printUsage();
         }
     }
 
@@ -49,8 +71,12 @@ public class RavTodo implements Iterable{
     }
 
     private void listAllTodoItems() {
+        Collections.sort(todoList, RavTodoItem.PriDueComparator);
+        LocalDate today = LocalDate.now();
         for (RavTodoItem t : todoList) {
-            t.displayItem();
+            if (!t.getThresholdDate().isAfter(today) && !t.isTodoComplete()) {
+                t.displayItem();
+            }
         }
     }
 
@@ -75,7 +101,7 @@ public class RavTodo implements Iterable{
     }
 
     public void readTodoFile() throws IOException{
-        File todoFile = new File(getConfigPath());
+        File todoFile = new File(getConfigPath() + "/todo.txt");
         Scanner todoReader = new Scanner(todoFile);
         int lineNum = 1;
 
@@ -92,7 +118,7 @@ public class RavTodo implements Iterable{
         return todoList.size();
     }
 
-    public static void printUsage(){
+    public void printUsage(){
         System.out.println("Usage: ravtodo [command] <arguments>");
         System.out.println("Available commands:");
         System.out.println("   ls");
@@ -105,6 +131,44 @@ public class RavTodo implements Iterable{
 
 
     //TODO: implement 'do'
+    public void doTask(int n) throws IOException {
+        try {
+            System.out.println("Searching for todo " + n);
+            getTask(n).markComplete();
+        } catch (RavTodoNotFoundException e) {
+            System.out.println("Index not found in Todo file.");
+        }
+        writeTodoFile();
+    }
+
+    public void writeTodoFile() throws IOException {
+        File todoFile = new File(properties.getProperty("todo.path") + "/todo.txt");
+        Path path = todoFile.toPath();
+        Files.move(path, path.resolveSibling("todo.bak"), REPLACE_EXISTING);
+        File newFile = new File(properties.getProperty("todo.path") + "/todo.txt");
+        PrintWriter out = new PrintWriter(newFile);
+        Iterator<RavTodoItem> iter = todoList.iterator();
+        while (iter.hasNext()){
+            out.println(iter.next().getRawLine());
+        }
+        out.close();
+    }
+
+    public RavTodoItem getTask(int i) throws RavTodoNotFoundException {
+        Iterator<RavTodoItem> iter = todoList.iterator();
+        RavTodoItem result = null;
+        while (iter.hasNext()) {
+            result = iter.next();
+            if (result.getIndex() == i){
+                break;
+            }
+        }
+        if (result != null) {
+            return result;
+        } else {
+            throw new RavTodoNotFoundException();
+        }
+    }
 
     //TODO: implement 'archive'
 

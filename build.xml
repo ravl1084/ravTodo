@@ -61,4 +61,10 @@
             <arg value="@someday" />
         </java>
     </target>
+    <target name="run-do" depends="compile">
+        <java fork="true" classname="com.rav.RavTodo" failonerror="yes" classpathref="classpath.test">
+            <arg value="do" />
+            <arg value="87" />
+        </java>
+    </target>
 </project>

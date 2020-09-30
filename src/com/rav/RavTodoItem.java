@@ -1,9 +1,9 @@
 package com.rav;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,11 +12,10 @@ public class RavTodoItem {
     private int index;
     private ArrayList<String> projects = new ArrayList<>();
     private ArrayList<String> contexts = new ArrayList<>();
-    private Date createdDate;
-    private Date thresholdDate;
-    private Date dueDate;
-    private Date completeDate;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private LocalDate createdDate;
+    private LocalDate thresholdDate;
+    private LocalDate dueDate;
+    private LocalDate completeDate;
     private boolean isComplete = false;
     private String priority;
 
@@ -44,9 +43,22 @@ public class RavTodoItem {
         this.rawLine = rawLine;
     }
 
+    public static Comparator<RavTodoItem> PriDueComparator = new Comparator<RavTodoItem>() {
+        @Override
+        public int compare(RavTodoItem ravTodoItem, RavTodoItem t1) {
+            String pri1 = ravTodoItem.getPriority();
+            String pri2 = t1.getPriority();
+            LocalDate due1 = ravTodoItem.getDueDate();
+            LocalDate due2 = t1.getDueDate();
+            int priCompare = pri1.compareTo(pri2);
+            int dueCompare = due1.compareTo(due2);
+
+            return priCompare+dueCompare;
+        }
+    };
 
     public void displayItem() {
-        System.out.println(this.index + " " + getRawLine());
+        System.out.format("%3d %s\n",this.index, getRawLine());
     }
 
     public boolean matchesTerms(String[] terms){
@@ -100,18 +112,18 @@ public class RavTodoItem {
         Matcher m = regex.matcher(rawLine);
 
         if (m.find()) {
-            createdDate = dateFormat.parse(m.group(3));
+            createdDate = LocalDate.parse(m.group(3));
         } else {
-            createdDate = null;
+            createdDate = LocalDate.now();
         }
     }
 
-    public Date getCreatedDate() {
+    public LocalDate getCreatedDate() {
         return createdDate;
     }
 
     public void readCompleteMark() {
-        String searchPattern = "^x ";
+        String searchPattern = "^x .*";
 
         Pattern regex = Pattern.compile(searchPattern);
         Matcher matcher = regex.matcher(rawLine);
@@ -132,7 +144,7 @@ public class RavTodoItem {
         if (matcher.find()){
             priority = matcher.group(1);
         } else {
-            System.out.println("No Match!");
+            priority = "Z";
         }
     }
 
@@ -147,11 +159,13 @@ public class RavTodoItem {
         Matcher matcher = regex.matcher(rawLine);
 
         if (matcher.find()){
-            thresholdDate = dateFormat.parse(matcher.group(1));
+            thresholdDate = LocalDate.parse(matcher.group(1));
+        } else {
+            thresholdDate = LocalDate.parse("1900-01-01");
         }
     }
 
-    public Date getThresholdDate() {
+    public LocalDate getThresholdDate() {
         return thresholdDate;
     }
 
@@ -162,12 +176,35 @@ public class RavTodoItem {
         Matcher matcher = regex.matcher(rawLine);
 
         if (matcher.find()){
-            dueDate = dateFormat.parse(matcher.group(1));
+            dueDate = LocalDate.parse(matcher.group(1));
+        } else {
+            dueDate = LocalDate.parse("2999-12-31");
         }
     }
 
-    public Date getDueDate() {
+    public LocalDate getDueDate() {
         return dueDate;
     }
+
+    public int getIndex() {
+        return this.index;
+    }
+
+    public void markComplete() {
+        displayItem();
+        if (!isTodoComplete()) {
+            this.isComplete = true;
+            this.completeDate = LocalDate.now();
+            this.priority = "Z";
+            setRawLine("x " + completeDate + " " + rawLine);
+        } else {
+            System.out.println("Todo already complete");
+        }
+    }
+
+
+    //TODO: implement recurrence
+
+    //TODO: implement outline
 
 }
