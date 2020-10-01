@@ -54,6 +54,23 @@ public class RavTodo implements Iterable{
                     }
                     break;
 
+                case "add":
+                    if (args.length > 1) {
+                        String[] terms = Arrays.copyOfRange(args, 1, args.length);
+                        String taskString = "";
+                        for (int i = 0; i < terms.length; i++) {
+                            taskString += terms[i] + " ";
+                        }
+                        try {
+                            todo.addTask(new RavTodoItem(999, taskString));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        todo.printUsage();
+                    }
+                    break;
+
                 default: {
                     System.out.println("Unknown command.");
                     todo.printUsage();
@@ -91,7 +108,7 @@ public class RavTodo implements Iterable{
     private void listTodoItems(String[] terms) {
         Collections.sort(todoList, RavTodoItem.PriDueComparator);
         for (RavTodoItem t : todoList){
-            if (t.matchesTerms(terms)){
+            if (t.matchesTerms(terms) && t.hasMetThreshold()){
                 t.displayItem();
             }
         }
@@ -141,11 +158,20 @@ public class RavTodo implements Iterable{
 
     public void doTask(int n) throws IOException {
         try {
-            System.out.println("Searching for todo " + n);
-            getTask(n).markComplete();
+            //System.out.println("Searching for todo " + n);
+            RavTodoItem t = getTask(n);
+            if (t.isRecurrence()){
+                addTask(t.createNext());
+            }
+            t.markComplete();
         } catch (RavTodoNotFoundException e) {
             System.out.println("Index not found in Todo file.");
         }
+        writeTodoFile();
+    }
+
+    public void addTask(RavTodoItem t) throws IOException {
+        todoList.add(t);
         writeTodoFile();
     }
 
@@ -207,10 +233,6 @@ public class RavTodo implements Iterable{
         outDone.close();
         outTodo.close();
     }
-
-    //TODO: implement 'add'
-
-    //TODO: implement threshold date filtering
 }
 
 

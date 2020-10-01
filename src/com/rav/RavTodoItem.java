@@ -1,5 +1,8 @@
 package com.rav;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -8,16 +11,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RavTodoItem {
-    private String rawLine;
-    private int index;
-    private ArrayList<String> projects = new ArrayList<>();
+    private Logger logger = LoggerFactory.getLogger(RavTodoItem.class);
     private ArrayList<String> contexts = new ArrayList<>();
-    private LocalDate createdDate;
-    private LocalDate thresholdDate;
-    private LocalDate dueDate;
+    private ArrayList<String> projects = new ArrayList<>();
+    private Integer period;
     private LocalDate completeDate;
-    private boolean isComplete = false;
+    private LocalDate createdDate;
+    private LocalDate dueDate;
+    private LocalDate thresholdDate;
     private String priority;
+    private String rawLine;
+    private String description;
+    private String unit;
+    private boolean isComplete = false;
+    private boolean recurrence;
+    private boolean relative;
+    private boolean hasDue;
+    private boolean hasThreshold;
+    private int index;
 
     public RavTodoItem(int index, String str){
         this.rawLine = str;
@@ -26,6 +37,7 @@ public class RavTodoItem {
         readContexts();
         readCompleteMark();
         readPriority();
+        readRecurrence();
         try {
             readCreatedDate();
             readThreshold();
@@ -48,15 +60,15 @@ public class RavTodoItem {
         public int compare(RavTodoItem ravTodoItem, RavTodoItem t1) {
             String pri1 = ravTodoItem.getPriority();
             String pri2 = t1.getPriority();
-            LocalDate due1 = ravTodoItem.getDueDate();
-            LocalDate due2 = t1.getDueDate();
+            LocalDate due1 = ravTodoItem.getCreatedDate();
+            LocalDate due2 = t1.getCreatedDate();
             int comp1 = ravTodoItem.isTodoComplete()?-5000:50;
             int comp2 = t1.isTodoComplete()?-5000:50;
             int priCompare = pri1.compareTo(pri2);
             int dueCompare = due1.compareTo(due2);
             int compCompare = comp2 - comp1;
 
-            return priCompare+dueCompare + compCompare;
+            return priCompare*10 + dueCompare + compCompare;
         }
     };
 
@@ -109,15 +121,17 @@ public class RavTodoItem {
     }
 
     public void readCreatedDate() throws ParseException {
-        String searchPattern = "^(x )*(\\([A-Z]\\) )*(\\d{4}-\\d{2}-\\d{2})\\s+.*";
+        String searchPattern = "^(x )*(\\([A-Z]\\) )*(\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
         Matcher m = regex.matcher(rawLine);
 
         if (m.find()) {
             createdDate = LocalDate.parse(m.group(3));
+            description = m.group(4);
         } else {
             createdDate = LocalDate.now();
+            updateRawLine();
         }
     }
 
@@ -155,7 +169,7 @@ public class RavTodoItem {
         return priority;
     }
 
-    public void readThreshold() throws ParseException {
+    public void readThreshold() {
         String searchPattern = ".*\\s+t:(\\d{4}-\\d{2}-\\d{2}).*";
 
         Pattern regex = Pattern.compile(searchPattern);
@@ -163,8 +177,10 @@ public class RavTodoItem {
 
         if (matcher.find()){
             thresholdDate = LocalDate.parse(matcher.group(1));
+            hasThreshold = true;
         } else {
             thresholdDate = LocalDate.parse("1900-01-01");
+            hasThreshold = false;
         }
     }
 
@@ -172,7 +188,11 @@ public class RavTodoItem {
         return thresholdDate;
     }
 
-    public void readDue() throws ParseException {
+    public void setThresholdDate(LocalDate date) {
+        this.thresholdDate = date;
+    }
+
+    public void readDue() {
         String searchPattern = ".*\\s+due:(\\d{4}-\\d{2}-\\d{2}).*";
 
         Pattern regex = Pattern.compile(searchPattern);
@@ -180,8 +200,10 @@ public class RavTodoItem {
 
         if (matcher.find()){
             dueDate = LocalDate.parse(matcher.group(1));
+            hasDue = true;
         } else {
             dueDate = LocalDate.parse("2999-12-31");
+            hasDue = false;
         }
     }
 
@@ -189,17 +211,22 @@ public class RavTodoItem {
         return dueDate;
     }
 
+    public void setDueDate(LocalDate date) {
+        this.dueDate = date;
+    }
+
     public int getIndex() {
         return this.index;
     }
 
     public void markComplete() {
+        System.out.print("Done: ");
         displayItem();
         if (!isTodoComplete()) {
             this.isComplete = true;
             this.completeDate = LocalDate.now();
             this.priority = "Z";
-            setRawLine("x " + completeDate + " " + rawLine);
+            updateRawLine();
         } else {
             System.out.println("Todo already complete");
         }
@@ -207,6 +234,154 @@ public class RavTodoItem {
 
 
     //TODO: implement recurrence
+
+    public void readRecurrence() {
+        String searchString = ".* rec:(\\+)*(\\d+)([dwmy]).*";
+        Pattern regex = Pattern.compile(searchString);
+        Matcher matcher = regex.matcher(rawLine);
+        //logger.info(rawLine);
+
+        if (matcher.find()){
+            this.recurrence = true;
+            this.period = Integer.valueOf(matcher.group(2));
+            this.unit = matcher.group(3);
+            if (matcher.group(1) != null) {
+                this.relative = false;
+            } else {
+                this.relative = true;
+            }
+        } else {
+            this.recurrence = false;
+        }
+    }
+
+    public boolean isRecurrence() {
+        return recurrence;
+    }
+
+    public RavTodoItem createNext() {
+        RavTodoItem t = new RavTodoItem(999, rawLine);
+        LocalDate today = LocalDate.now();
+        if (t.isRelative()){
+            switch (unit) {
+                case "d":
+                    t.setThresholdDate(today.plusDays(period));
+                    break;
+
+                case "w":
+                    t.setThresholdDate(today.plusWeeks(period));
+                    break;
+
+                case "m":
+                    t.setThresholdDate(today.plusMonths(period));
+                    break;
+
+                case "y":
+                    t.setThresholdDate(today.plusYears(period));
+            }
+        } else {
+            if (t.usesThreshold()) {
+                LocalDate date = t.getThresholdDate();
+                switch (unit) {
+                    case "d":
+                        t.setThresholdDate(date.plusDays(period));
+                        break;
+
+                    case "w" :
+                        t.setThresholdDate(date.plusWeeks(period));
+                        break;
+
+                    case "m":
+                        t.setThresholdDate(date.plusMonths(period));
+                        break;
+
+                    case "y":
+                        t.setThresholdDate(date.plusYears(period));
+                        break;
+                }
+            }
+            // if it has due, add period to due
+            if (t.usesDue()){
+                LocalDate date = t.getDueDate();
+                switch (unit) {
+                    case "d":
+                        t.setDueDate(date.plusDays(period));
+                        break;
+
+                    case "w":
+                        t.setDueDate(date.plusWeeks(period));
+                        break;
+
+                    case "m":
+                        t.setDueDate(date.plusMonths(period));
+                        break;
+
+                    case "y":
+                        t.setDueDate(date.plusYears(period));
+                }
+            }
+
+        }
+        // regenerate rawLine properly
+
+        t.updateRawLine();
+
+        return t;
+    }
+
+    private void updateRawLine() {
+        String newLine = "";
+        if (isTodoComplete()){
+            newLine += "x " + completeDate + " ";
+        } else {
+            if (!priority.equals("Z")) {
+                newLine += "(" + priority + ") ";
+            }
+        }
+
+        newLine += createdDate + " ";
+
+        if (hasThreshold) {
+            String oldThreshold = "(.*)\\s+t:\\d{4}-\\d{2}-\\d{2}(.*)";
+            Pattern regexT = Pattern.compile(oldThreshold);
+            Matcher mt = regexT.matcher(description);
+            if (mt.find()) {
+                description = mt.group(1) + mt.group(2);
+            }
+            description += " t:" + getThresholdDate();
+        }
+
+        if (hasDue) {
+            String oldDue = "(.*)\\s+due:\\d{4}-\\d{2}-\\d{2}(.*)";
+            Pattern regexD = Pattern.compile(oldDue);
+            Matcher md = regexD.matcher(description);
+            if (md.find()) {
+                description = md.group(1) + md.group(2);
+            }
+            description += " due:" + getDueDate();
+        }
+
+        newLine += description;
+
+        setRawLine(newLine);
+    }
+
+    private boolean usesDue() {
+        return hasDue;
+    }
+
+    private boolean usesThreshold() {
+        return hasThreshold;
+    }
+
+    public boolean isRelative() {
+        return relative;
+    }
+
+    public boolean hasMetThreshold() {
+        LocalDate today = LocalDate.now();
+        return !thresholdDate.isAfter(today);
+    }
 
     //TODO: implement outline
 

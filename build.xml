@@ -60,7 +60,7 @@
     <target name="run-ls-terms" depends="compile">
         <java fork="true" classname="com.rav.RavTodo" failonerror="yes" classpathref="classpath.test">
             <arg value="ls" />
-            <arg value="@someday" />
+            <arg value="@laptop" />
         </java>
     </target>
     <target name="run-do" depends="compile">
