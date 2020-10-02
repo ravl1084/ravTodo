@@ -69,6 +69,11 @@
             <arg value="87" />
         </java>
     </target>
+    <target name="run-next" depends="compile">
+        <java fork="true" classname="com.rav.RavTodo" failonerror="yes" classpathref="classpath.test">
+            <arg value="next" />
+        </java>
+    </target>
 
     <!-- constructs the external libraries classpath name -->
     <pathconvert property="classpath.name" pathsep=" ">

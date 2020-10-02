@@ -29,6 +29,8 @@ public class RavTodoItem {
     private boolean hasDue;
     private boolean hasThreshold;
     private int index;
+    private String outline;
+    private boolean hasOutline;
 
     public RavTodoItem(int index, String str){
         this.rawLine = str;
@@ -38,13 +40,10 @@ public class RavTodoItem {
         readCompleteMark();
         readPriority();
         readRecurrence();
-        try {
-            readCreatedDate();
-            readThreshold();
-            readDue();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        readOutline();
+        readCreatedDate();
+        readThreshold();
+        readDue();
     }
 
     public String getRawLine() {
@@ -120,7 +119,7 @@ public class RavTodoItem {
         return this.contexts;
     }
 
-    public void readCreatedDate() throws ParseException {
+    public void readCreatedDate() {
         String searchPattern = "^(x )*(\\([A-Z]\\) )*(\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
@@ -131,6 +130,7 @@ public class RavTodoItem {
             description = m.group(4);
         } else {
             createdDate = LocalDate.now();
+            description = rawLine;
             updateRawLine();
         }
     }
@@ -383,6 +383,24 @@ public class RavTodoItem {
         return !thresholdDate.isAfter(today);
     }
 
-    //TODO: implement outline
+    public void readOutline() {
+        String searchString = ".*\\s+outline:(\\w+).*";
+        Pattern regex = Pattern.compile(searchString);
+        Matcher matcher = regex.matcher(rawLine);
+        if (matcher.find()){
+            this.outline = matcher.group(1);
+            this.hasOutline = true;
+        } else {
+            this.outline = "";
+            this.hasOutline = false;
+        }
+    }
 
+    public String getOutline() {
+        return outline;
+    }
+
+    public boolean isPartOfOutline() {
+        return hasOutline;
+    }
 }

@@ -71,6 +71,10 @@ public class RavTodo implements Iterable{
                     }
                     break;
 
+                case "next":
+                    todo.findNextActions();
+                    break;
+
                 default: {
                     System.out.println("Unknown command.");
                     todo.printUsage();
@@ -115,9 +119,15 @@ public class RavTodo implements Iterable{
     }
 
     public void readConfig() throws IOException{
+        String pathDirs = System.getenv("HOME");
+        if (pathDirs.matches(":")) {
+            pathDirs += "\\";
+        } else {
+            pathDirs += "/";
+        }
         String fileName = "ravTodo.conf";
 
-        InputStream inputStream = new FileInputStream(fileName);
+        InputStream inputStream = new FileInputStream(pathDirs + fileName);
 
         this.properties.load(inputStream);
     }
@@ -232,6 +242,15 @@ public class RavTodo implements Iterable{
         System.out.println("Archived " + n + " tasks.");
         outDone.close();
         outTodo.close();
+    }
+
+    public void findNextActions(){
+        File path = new File(properties.getProperty("todo.path"));
+        String[] files = path.list((lamFolder, lamName) -> lamName.matches(".*\\.ol\\.txt"));
+
+        for (String fName : files) {
+            System.out.println(fName);
+        }
     }
 }
 
