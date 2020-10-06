@@ -10,6 +10,9 @@ import java.util.regex.Pattern;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+/**
+ * Main class implementing the different actions needed to use and manage a Todo.txt file.
+ */
 public class RavTodo {
     private Properties properties;
 
@@ -103,14 +106,15 @@ public class RavTodo {
         this.properties = new Properties();
         try {
             readConfig();
-            //System.out.println("Config found and loaded!");
             readTodoFile();
-            //System.out.println("Todo file found and loaded!");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * This method lists all the todo items in the file that have met their threshold date and are not complete.
+     */
     private void listAllTodoItems() {
         Collections.sort(todoList, RavTodoItem.PriDueComparator);
         LocalDate today = LocalDate.now();
@@ -121,6 +125,11 @@ public class RavTodo {
         }
     }
 
+    /**
+     * This method filters the todo list by the search terms provided and lists the matching todos.
+     *
+     * @param terms A String array of all the search terms to filter the todo list
+     */
     private void listTodoItems(String[] terms) {
         Collections.sort(todoList, RavTodoItem.PriDueComparator);
         for (RavTodoItem t : todoList){
@@ -130,6 +139,11 @@ public class RavTodo {
         }
     }
 
+    /**
+     * This method looks for the RavTodo config file in the HOME directory and loads it if found.
+     *
+     * @throws IOException
+     */
     public void readConfig() throws IOException{
         String pathDirs = System.getenv("HOME");
         if (pathDirs.matches(":")) {
@@ -144,6 +158,11 @@ public class RavTodo {
         this.properties.load(inputStream);
     }
 
+    /**
+     * This method returns the path to the todo file set in the config file.
+     *
+     * @return the path defined in the config file for the todo.txt file
+     */
     public String getConfigPath(){
         String path = properties.getProperty("todo.path");
         if (path.matches(":")) {
@@ -154,6 +173,11 @@ public class RavTodo {
         return path;
     }
 
+    /**
+     * This method looks for the todo file in the config and loads each item into a RavTodoItem object
+     *
+     * @throws IOException
+     */
     public void readTodoFile() throws IOException{
         File todoFile = new File(getConfigPath() + "todo.txt");
         Scanner todoReader = new Scanner(todoFile);
@@ -168,17 +192,34 @@ public class RavTodo {
         todoReader.close();
     }
 
+    /**
+     * @return the amount of todos in the list
+     */
     public int getTodoCount() {
         return todoList.size();
     }
 
+    /**
+     * This method prints the available commands
+     */
     public void printUsage(){
         System.out.println("Usage: ravtodo [command] <arguments>");
         System.out.println("Available commands:");
-        System.out.println("   ls");
+        System.out.format("%10s %s%n", "ls", "List todos");
+        System.out.format("%10s %s%n", "add <text>", "Add a todo");
+        System.out.format("%10s %s%n", "do <id>", "Mark a todo as complete");
+        System.out.format("%10s %s%n", "archive", "Archive completed todos into done.txt");
+        System.out.format("%10s %s%n", "next", "Scan outlines for next actions");
+        System.out.format("%10s %s%n", "process", "Process GTD inbox");
     }
 
 
+    /**
+     * This method marks the provided task as complete.
+     *
+     * @param n the index of the task to mark as complete.
+     * @throws IOException
+     */
     public void doTask(int n) throws IOException {
         try {
             //System.out.println("Searching for todo " + n);
@@ -193,11 +234,22 @@ public class RavTodo {
         writeTodoFile();
     }
 
+    /**
+     * This method adds a RavTodoItem object to the existing list.
+     *
+     * @param t the RavTodoItem object to add to the list
+     * @throws IOException
+     */
     public void addTask(RavTodoItem t) throws IOException {
         todoList.add(t);
         writeTodoFile();
     }
 
+    /**
+     * This method writes all the RavTodoItem objects into the todo.txt file in the standard format
+     *
+     * @throws IOException
+     */
     public void writeTodoFile() throws IOException {
         File todoFile = new File(getConfigPath() + "todo.txt");
         Path todopath = todoFile.toPath();
@@ -211,6 +263,13 @@ public class RavTodo {
         out.close();
     }
 
+    /**
+     * This method returns the RavTodoItem that matches the index provided.
+     *
+     * @param i the index of the todo item been requested
+     * @return the RavTodoItem with the provided index
+     * @throws RavTodoNotFoundException
+     */
     public RavTodoItem getTask(int i) throws RavTodoNotFoundException {
         Iterator<RavTodoItem> iter = todoList.iterator();
         RavTodoItem result = null;
@@ -227,6 +286,12 @@ public class RavTodo {
         }
     }
 
+    /**
+     * This method backs up both the todo.txt file and the done.txt file and then moves the completed
+     * todo items to done.txt.
+     *
+     * @throws IOException
+     */
     public void archiveTasks() throws IOException {
         File todoFile = new File(getConfigPath() + "todo.txt");
         Path todopath = todoFile.toPath();
@@ -257,6 +322,12 @@ public class RavTodo {
         outTodo.close();
     }
 
+    /**
+     * This method looks for any outline in the todo folder and if there are no active tasks in the todo.txt
+     * file, proceeds to add the next item per the outline.
+     *
+     * @throws IOException
+     */
     public void findNextActions() throws IOException {
         File path = new File(properties.getProperty("todo.path"));
         String[] outlines = path.list((lamFolder, lamName) -> lamName.matches(".*\\.ol\\.txt"));
@@ -285,6 +356,13 @@ public class RavTodo {
         }
     }
 
+    /**
+     * This method parses the given outline and finds the next item per the outline structure and adds it to the
+     * todo list
+     *
+     * @param fName the name of the outline
+     * @throws IOException
+     */
     private void getNextTask(String fName) throws IOException {
         File outline = new File(getConfigPath() + fName + ".ol.txt");
         Scanner scnr = new Scanner(outline);
@@ -329,6 +407,12 @@ public class RavTodo {
         }
     }
 
+    /**
+     * This is a helper method to assist in parsing the outline file
+     *
+     * @param str String to process
+     * @return
+     */
     private int countTabs(String str) {
         String searchString = "^\\t(.*)";
         Pattern regex = Pattern.compile(searchString);
@@ -340,6 +424,14 @@ public class RavTodo {
         }
     }
 
+    /**
+     * This method implements the processing of any items in the todo file with the context @inbox. This is
+     * an implementation of David Allen's Getting Things Done methodology of capturing items in the @inbox context
+     * first to then regularly review and decide where in the system it belongs. This method will allow to add a
+     * different context and any appropriate projects to the item.
+     *
+     * @throws IOException
+     */
     public void processInbox() throws IOException {
         Console con = System.console();
         ArrayList<String> newTasks = new ArrayList<>();

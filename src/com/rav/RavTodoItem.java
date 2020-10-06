@@ -2,8 +2,6 @@ package com.rav;
 
 import com.diogonunes.jcolor.AnsiFormat;
 import com.diogonunes.jcolor.Attribute;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -14,8 +12,11 @@ import java.util.regex.Pattern;
 
 import static com.diogonunes.jcolor.Ansi.colorize;
 
+/**
+ * This class represents a todo item per the Todo.txt standard
+ */
 public class RavTodoItem {
-    private Logger logger = LoggerFactory.getLogger(RavTodoItem.class);
+    //private Logger logger = LoggerFactory.getLogger(RavTodoItem.class);
     private ArrayList<String> contexts = new ArrayList<>();
     private ArrayList<String> projects = new ArrayList<>();
     private Integer period;
@@ -36,6 +37,12 @@ public class RavTodoItem {
     private String outline;
     private boolean hasOutline;
 
+    /**
+     * This constructor creates a RavTodoItem object from the string in the todo.txt file
+     *
+     * @param index the index of this todo item in the list
+     * @param str   the todo item string as recoded in the todo.txt file
+     */
     public RavTodoItem(int index, String str){
         this.rawLine = str;
         this.index = index;
@@ -51,15 +58,26 @@ public class RavTodoItem {
         updateRawLine();
     }
 
+    /**
+     * @return the raw string per the todo.txt file
+     */
     public String getRawLine() {
         //updateRawLine();
         return rawLine;
     }
 
+    /**
+     * This method sets the todo item's raw string to the provided string
+     *
+     * @param rawLine the new raw string for the todo item
+     */
     public void setRawLine(String rawLine) {
         this.rawLine = rawLine;
     }
 
+    /**
+     * This comparator sorts the todo items first by priority, then created date and completion
+     */
     public static Comparator<RavTodoItem> PriDueComparator = new Comparator<RavTodoItem>() {
         @Override
         public int compare(RavTodoItem ravTodoItem, RavTodoItem t1) {
@@ -77,6 +95,10 @@ public class RavTodoItem {
         }
     };
 
+    /**
+     * This method shows an ANSI-colorized version of the todo item, coloring priorities A through C,
+     * highlighting contexts and projects, and showing complete items as strikethrough
+     */
     public void displayItem() {
         AnsiFormat priA = new AnsiFormat(Attribute.TEXT_COLOR(1));
         AnsiFormat priB = new AnsiFormat(Attribute.TEXT_COLOR(208));
@@ -118,6 +140,10 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @param terms the array of Strings that holds the search terms
+     * @return true if the todo item matches any of the terms, false otherwise
+     */
     public boolean matchesTerms(String[] terms){
         boolean matchFound = false;
         for (int i = 0; i < terms.length; i++) {
@@ -132,6 +158,9 @@ public class RavTodoItem {
         return matchFound;
     }
 
+    /**
+     * This method parses the project for the todo
+     */
     public void readProjects(){
         String projectPattern = "(.*\\s)(\\+\\w+)(.*)";
 
@@ -144,10 +173,16 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return the todo item's project
+     */
     public String getProject() {
         return this.projects.get(0);
     }
 
+    /**
+     * This method parses the context for the todo
+     */
     public void readContexts(){
         String contextPattern = "(.*\\s)(\\@\\w+)(.*)";
 
@@ -160,20 +195,16 @@ public class RavTodoItem {
         }
     }
 
-    public void setContext(String str) {
-        contexts.add(str);
-    }
-
-    public void removeContext(String str) {
-
-        Predicate<String> pr = a->a.equals(str);
-        contexts.removeIf(pr);
-    }
-
+    /**
+     * @return the list of contexts
+     */
     public ArrayList<String> getContext() {
         return this.contexts;
     }
 
+    /**
+     * This method parses the created date for the todo
+     */
     public void readCreatedDate() {
         String searchPattern = "^\\s?(\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
 
@@ -188,10 +219,16 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return the todo item's created date
+     */
     public LocalDate getCreatedDate() {
         return createdDate;
     }
 
+    /**
+     * This method parses the todo item and determines if it is complete
+     */
     public void readCompleteMark() {
         String searchPattern = "^x (\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
 
@@ -207,10 +244,17 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return true if the todo is complete, false otherwise
+     */
     public boolean isTodoComplete() {
         return isComplete;
     }
 
+    /**
+     * This methos parses the todo item and extracts the priority. The priority is set to Z for items
+     * with no explicit priority for sorting purposes
+     */
     public void readPriority() {
         String searchPattern = "^\\(([a-zA-Z])\\)(.*)";
 
@@ -225,10 +269,17 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return the String with the priority
+     */
     public String getPriority(){
         return priority;
     }
 
+    /**
+     * This method parses the todo item and extracts the threshold date. The threshold date is set to 1900-01-01
+     * when no explicit threshold exists for sorting purposes
+     */
     public void readThreshold() {
         String searchPattern = "(.*\\s+)t:(\\d{4}-\\d{2}-\\d{2})(.*)";
 
@@ -245,14 +296,25 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return the threshold date of the todo item
+     */
     public LocalDate getThresholdDate() {
         return thresholdDate;
     }
 
+    /**
+     * This method sets the threshold date to the provided date
+     * @param date the new threshold date
+     */
     public void setThresholdDate(LocalDate date) {
         this.thresholdDate = date;
     }
 
+    /**
+     * This method parses the todo item and reads the due date. If the todo item has no explicit due date, the
+     * date is set to 2999-12-31 for sorting purposes
+     */
     public void readDue() {
         String searchPattern = "(.*\\s+)due:(\\d{4}-\\d{2}-\\d{2})(.*)";
 
@@ -269,18 +331,32 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return the due date
+     */
     public LocalDate getDueDate() {
         return dueDate;
     }
 
+    /**
+     * This method sets the due date to the provided date
+     *
+     * @param date the new due date
+     */
     public void setDueDate(LocalDate date) {
         this.dueDate = date;
     }
 
+    /**
+     * @return the index of the todo item
+     */
     public int getIndex() {
         return this.index;
     }
 
+    /**
+     * This method marks this todo item as complete.
+     */
     public void markComplete() {
         System.out.print("Done: ");
         displayItem();
@@ -294,6 +370,9 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * This method parses the todo item and extracts the recurrence
+     */
     public void readRecurrence() {
         String searchString = "(.* )rec:(\\+)*(\\d+)([dwmy])(.*)";
         Pattern regex = Pattern.compile(searchString);
@@ -315,10 +394,18 @@ public class RavTodoItem {
         }
     }
 
+    /**
+     * @return true if the todo is recurring, false otherwise
+     */
     public boolean isRecurrence() {
         return recurrence;
     }
 
+    /**
+     * This method creates the new iteration of a recurring item
+     *
+     * @return the new iteration of the todo item
+     */
     public RavTodoItem createNext() {
         RavTodoItem t = new RavTodoItem(999, rawLine);
         LocalDate today = LocalDate.now();
@@ -387,6 +474,9 @@ public class RavTodoItem {
         return t;
     }
 
+    /**
+     * This method re-generates the raw line, making any updates necessary
+     */
     private void updateRawLine() {
         String newLine = "";
         if (isTodoComplete()){
@@ -442,11 +532,17 @@ public class RavTodoItem {
         return relative;
     }
 
+    /**
+     * @return true if threshold date is in the past, false otherwise
+     */
     public boolean hasMetThreshold() {
         LocalDate today = LocalDate.now();
         return !thresholdDate.isAfter(today);
     }
 
+    /**
+     * This method parses the todo item and extracts the outline name
+     */
     public void readOutline() {
         String searchString = "(.*\\s+)outline:(\\w+)(.*)";
         Pattern regex = Pattern.compile(searchString);
