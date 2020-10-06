@@ -1,14 +1,18 @@
 package com.rav;
 
+import com.diogonunes.jcolor.AnsiFormat;
+import com.diogonunes.jcolor.Attribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.diogonunes.jcolor.Ansi.colorize;
 
 public class RavTodoItem {
     private Logger logger = LoggerFactory.getLogger(RavTodoItem.class);
@@ -35,18 +39,20 @@ public class RavTodoItem {
     public RavTodoItem(int index, String str){
         this.rawLine = str;
         this.index = index;
-        readProjects();
-        readContexts();
         readCompleteMark();
         readPriority();
-        readRecurrence();
-        readOutline();
         readCreatedDate();
+        readProjects();
+        readContexts();
+        readRecurrence();
         readThreshold();
         readDue();
+        readOutline();
+        updateRawLine();
     }
 
     public String getRawLine() {
+        //updateRawLine();
         return rawLine;
     }
 
@@ -72,7 +78,44 @@ public class RavTodoItem {
     };
 
     public void displayItem() {
-        System.out.format("%3d %s\n",this.index, getRawLine());
+        AnsiFormat priA = new AnsiFormat(Attribute.TEXT_COLOR(1));
+        AnsiFormat priB = new AnsiFormat(Attribute.TEXT_COLOR(208));
+        AnsiFormat priC = new AnsiFormat(Attribute.TEXT_COLOR(11));
+        AnsiFormat projFormat = new AnsiFormat(Attribute.CYAN_TEXT());
+        AnsiFormat contFormat = new AnsiFormat(Attribute.GREEN_TEXT());
+        if (isComplete) {
+            System.out.println(colorize(String.format("%3d %s", this.index, getRawLine()), Attribute.STRIKETHROUGH()));
+        } else {
+            switch (priority) {
+                case "A":
+                    System.out.print(priA.format(String.format("%3d %s", this.index, "(" + priority + ") ")));
+                    break;
+
+                case "B":
+                    System.out.print(priB.format(String.format("%3d %s", this.index, "(" + priority + ") ")));
+                    break;
+
+                case "C":
+                    System.out.print(priC.format(String.format("%3d %s", this.index, "(" + priority + ") ")));
+                    break;
+
+                default:
+                    System.out.print(String.format("%3d %s", this.index, ""));
+                    break;
+            }
+
+            System.out.print(description.trim() + " ");
+
+            for (String p : projects) {
+                System.out.print(projFormat.format(p + " "));
+            }
+
+            for (String c : contexts) {
+                System.out.print(contFormat.format(c + " "));
+            }
+
+            System.out.println();
+        }
     }
 
     public boolean matchesTerms(String[] terms){
@@ -93,10 +136,11 @@ public class RavTodoItem {
         String projectPattern = "(.*\\s)(\\+\\w+)(.*)";
 
         Pattern regex = Pattern.compile(projectPattern);
-        Matcher m = regex.matcher(rawLine);
+        Matcher m = regex.matcher(description);
 
         if (m.find()){
-            projects.add(m.group(2));
+            projects.add(m.group(2).trim());
+            description = m.group(1) + m.group(3);
         }
     }
 
@@ -108,11 +152,22 @@ public class RavTodoItem {
         String contextPattern = "(.*\\s)(\\@\\w+)(.*)";
 
         Pattern regex = Pattern.compile(contextPattern);
-        Matcher m = regex.matcher(rawLine);
+        Matcher m = regex.matcher(description);
 
         if (m.find()){
-            contexts.add(m.group(2));
+            contexts.add(m.group(2).trim());
+            description = m.group(1) + m.group(3);
         }
+    }
+
+    public void setContext(String str) {
+        contexts.add(str);
+    }
+
+    public void removeContext(String str) {
+
+        Predicate<String> pr = a->a.equals(str);
+        contexts.removeIf(pr);
     }
 
     public ArrayList<String> getContext() {
@@ -120,18 +175,16 @@ public class RavTodoItem {
     }
 
     public void readCreatedDate() {
-        String searchPattern = "^(x )*(\\([A-Z]\\) )*(\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
+        String searchPattern = "^\\s?(\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
-        Matcher m = regex.matcher(rawLine);
+        Matcher m = regex.matcher(description);
 
         if (m.find()) {
-            createdDate = LocalDate.parse(m.group(3));
-            description = m.group(4);
+            createdDate = LocalDate.parse(m.group(1));
+            description = m.group(2);
         } else {
             createdDate = LocalDate.now();
-            description = rawLine;
-            updateRawLine();
         }
     }
 
@@ -140,12 +193,18 @@ public class RavTodoItem {
     }
 
     public void readCompleteMark() {
-        String searchPattern = "^x .*";
+        String searchPattern = "^x (\\d{4}-\\d{2}-\\d{2})\\s+(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
         Matcher matcher = regex.matcher(rawLine);
 
-        isComplete = matcher.find();
+        if(matcher.find()) {
+            isComplete = true;
+            description = matcher.group(2);
+            completeDate = LocalDate.parse(matcher.group(1));
+        } else {
+            description = rawLine;
+        }
     }
 
     public boolean isTodoComplete() {
@@ -153,13 +212,14 @@ public class RavTodoItem {
     }
 
     public void readPriority() {
-        String searchPattern = "^\\(([a-zA-Z])\\)";
+        String searchPattern = "^\\(([a-zA-Z])\\)(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
-        Matcher matcher = regex.matcher(rawLine);
+        Matcher matcher = regex.matcher(description);
 
         if (matcher.find()){
             priority = matcher.group(1);
+            description = matcher.group(2);
         } else {
             priority = "Z";
         }
@@ -170,14 +230,15 @@ public class RavTodoItem {
     }
 
     public void readThreshold() {
-        String searchPattern = ".*\\s+t:(\\d{4}-\\d{2}-\\d{2}).*";
+        String searchPattern = "(.*\\s+)t:(\\d{4}-\\d{2}-\\d{2})(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
-        Matcher matcher = regex.matcher(rawLine);
+        Matcher matcher = regex.matcher(description);
 
         if (matcher.find()){
-            thresholdDate = LocalDate.parse(matcher.group(1));
+            thresholdDate = LocalDate.parse(matcher.group(2));
             hasThreshold = true;
+            description = matcher.group(1) + matcher.group(3);
         } else {
             thresholdDate = LocalDate.parse("1900-01-01");
             hasThreshold = false;
@@ -193,14 +254,15 @@ public class RavTodoItem {
     }
 
     public void readDue() {
-        String searchPattern = ".*\\s+due:(\\d{4}-\\d{2}-\\d{2}).*";
+        String searchPattern = "(.*\\s+)due:(\\d{4}-\\d{2}-\\d{2})(.*)";
 
         Pattern regex = Pattern.compile(searchPattern);
-        Matcher matcher = regex.matcher(rawLine);
+        Matcher matcher = regex.matcher(description);
 
         if (matcher.find()){
-            dueDate = LocalDate.parse(matcher.group(1));
+            dueDate = LocalDate.parse(matcher.group(2));
             hasDue = true;
+            description = matcher.group(1) + matcher.group(3);
         } else {
             dueDate = LocalDate.parse("2999-12-31");
             hasDue = false;
@@ -232,24 +294,22 @@ public class RavTodoItem {
         }
     }
 
-
-    //TODO: implement recurrence
-
     public void readRecurrence() {
-        String searchString = ".* rec:(\\+)*(\\d+)([dwmy]).*";
+        String searchString = "(.* )rec:(\\+)*(\\d+)([dwmy])(.*)";
         Pattern regex = Pattern.compile(searchString);
-        Matcher matcher = regex.matcher(rawLine);
+        Matcher matcher = regex.matcher(description);
         //logger.info(rawLine);
 
         if (matcher.find()){
             this.recurrence = true;
-            this.period = Integer.valueOf(matcher.group(2));
-            this.unit = matcher.group(3);
-            if (matcher.group(1) != null) {
+            this.period = Integer.valueOf(matcher.group(3));
+            this.unit = matcher.group(4);
+            if (matcher.group(2) != null) {
                 this.relative = false;
             } else {
                 this.relative = true;
             }
+            description = matcher.group(1) + matcher.group(5);
         } else {
             this.recurrence = false;
         }
@@ -300,7 +360,6 @@ public class RavTodoItem {
                         break;
                 }
             }
-            // if it has due, add period to due
             if (t.usesDue()){
                 LocalDate date = t.getDueDate();
                 switch (unit) {
@@ -322,7 +381,6 @@ public class RavTodoItem {
             }
 
         }
-        // regenerate rawLine properly
 
         t.updateRawLine();
 
@@ -339,29 +397,35 @@ public class RavTodoItem {
             }
         }
 
-        newLine += createdDate + " ";
+        newLine += createdDate + " " + description.trim();
+
+        for (String t : projects) {
+            newLine += " " + t;
+        }
+
+        for (String s : contexts) {
+            newLine += " " + s;
+        }
 
         if (hasThreshold) {
-            String oldThreshold = "(.*)\\s+t:\\d{4}-\\d{2}-\\d{2}(.*)";
-            Pattern regexT = Pattern.compile(oldThreshold);
-            Matcher mt = regexT.matcher(description);
-            if (mt.find()) {
-                description = mt.group(1) + mt.group(2);
-            }
-            description += " t:" + getThresholdDate();
+            newLine += " t:" + getThresholdDate();
         }
 
         if (hasDue) {
-            String oldDue = "(.*)\\s+due:\\d{4}-\\d{2}-\\d{2}(.*)";
-            Pattern regexD = Pattern.compile(oldDue);
-            Matcher md = regexD.matcher(description);
-            if (md.find()) {
-                description = md.group(1) + md.group(2);
-            }
-            description += " due:" + getDueDate();
+            newLine += " due:" + getDueDate();
         }
 
-        newLine += description;
+        if (isRecurrence()) {
+            newLine += " rec:";
+            if (!isRelative()) {
+                newLine += "+";
+            }
+            newLine += period + unit;
+        }
+
+        if (hasOutline) {
+            newLine += " outline:" + outline;
+        }
 
         setRawLine(newLine);
     }
@@ -384,12 +448,13 @@ public class RavTodoItem {
     }
 
     public void readOutline() {
-        String searchString = ".*\\s+outline:(\\w+).*";
+        String searchString = "(.*\\s+)outline:(\\w+)(.*)";
         Pattern regex = Pattern.compile(searchString);
-        Matcher matcher = regex.matcher(rawLine);
+        Matcher matcher = regex.matcher(description);
         if (matcher.find()){
-            this.outline = matcher.group(1);
+            this.outline = matcher.group(2);
             this.hasOutline = true;
+            description = matcher.group(1) + matcher.group(3);
         } else {
             this.outline = "";
             this.hasOutline = false;
@@ -402,5 +467,21 @@ public class RavTodoItem {
 
     public boolean isPartOfOutline() {
         return hasOutline;
+    }
+
+    public boolean hasContext(String str) {
+        boolean result = false;
+        for (String s : contexts) {
+            if (s.equals(str)){
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
+
+    public String getDescription() {
+        description = description.trim();
+        return description;
     }
 }

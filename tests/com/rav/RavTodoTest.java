@@ -35,7 +35,7 @@ public class RavTodoTest {
 	@Test
 	@DisplayName("Check location of todo file from config.")
 	public void pathTest() {
-		assertEquals("/home/rav/Nextcloud/Todo/todo.txt", tasks.getConfigPath());
+		assertEquals("/home/rav/Nextcloud/Todo/", tasks.getConfigPath());
 	}
 
 	@Test

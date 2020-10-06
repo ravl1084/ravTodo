@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,7 +56,7 @@ public class RavTodoItemTest {
     @DisplayName("Validate display of item")
     public void displayItemTest() {
         this.todoItem.displayItem();
-        assertEquals("1 (A) 2020-07-24 do something +good @now t:2020-08-08 due:2020-10-10\n", outContent.toString());
+        assertEquals("  1 (A) 2020-07-24 do something +good @now t:2020-08-08 due:2020-10-10\n", outContent.toString());
     }
 
     @Test
@@ -74,11 +75,7 @@ public class RavTodoItemTest {
     @Test
     @DisplayName("Validate reading of Created Date")
     public void readCreatedDateTest() {
-        try {
-            assertEquals(dateFormat.parse("2020-07-24"), todoItem.getCreatedDate());
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        assertEquals(LocalDate.of(2020, 7, 24), todoItem.getCreatedDate());
     }
 
     @Test
@@ -96,20 +93,18 @@ public class RavTodoItemTest {
     @Test
     @DisplayName("Validate threshold date")
     public void readThresholdDateTest() {
-        try {
-            assertEquals(dateFormat.parse("2020-08-08"), todoItem.getThresholdDate());
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        assertEquals(LocalDate.of(2020, 8, 8), todoItem.getThresholdDate());
     }
 
     @Test
     @DisplayName("Validate due date")
     public void readDueDateTest(){
-        try {
-            assertEquals(dateFormat.parse("2020-10-10"), todoItem.getDueDate());
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+        assertEquals(LocalDate.of(2020, 10, 10), todoItem.getDueDate());
+    }
+
+    @Test
+    @DisplayName("Validate description processing")
+    public void readDescriptionTest() {
+        assertEquals("do something", this.todoItem.getDescription());
     }
 }

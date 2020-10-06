@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-public class RavTodo implements Iterable{
+public class RavTodo {
     private Properties properties;
 
     private static ArrayList<RavTodoItem> todoList = new ArrayList<>();
@@ -72,7 +72,19 @@ public class RavTodo implements Iterable{
                     break;
 
                 case "next":
-                    todo.findNextActions();
+                    try {
+                        todo.findNextActions();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+
+                case "process":
+                    try {
+                        todo.processInbox();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 default: {
@@ -133,11 +145,17 @@ public class RavTodo implements Iterable{
     }
 
     public String getConfigPath(){
-        return this.properties.getProperty("todo.path");
+        String path = properties.getProperty("todo.path");
+        if (path.matches(":")) {
+            path += "\\";
+        } else {
+            path += "/";
+        }
+        return path;
     }
 
     public void readTodoFile() throws IOException{
-        File todoFile = new File(getConfigPath() + "/todo.txt");
+        File todoFile = new File(getConfigPath() + "todo.txt");
         Scanner todoReader = new Scanner(todoFile);
         int lineNum = 1;
 
@@ -158,11 +176,6 @@ public class RavTodo implements Iterable{
         System.out.println("Usage: ravtodo [command] <arguments>");
         System.out.println("Available commands:");
         System.out.println("   ls");
-    }
-
-    @Override
-    public Iterator iterator() {
-        return todoList.iterator();
     }
 
 
@@ -186,10 +199,10 @@ public class RavTodo implements Iterable{
     }
 
     public void writeTodoFile() throws IOException {
-        File todoFile = new File(properties.getProperty("todo.path") + "/todo.txt");
-        Path path = todoFile.toPath();
-        Files.move(path, path.resolveSibling("todo.bak"), REPLACE_EXISTING);
-        File newFile = new File(properties.getProperty("todo.path") + "/todo.txt");
+        File todoFile = new File(getConfigPath() + "todo.txt");
+        Path todopath = todoFile.toPath();
+        Files.move(todopath, todopath.resolveSibling("todo.bak"), REPLACE_EXISTING);
+        File newFile = new File(getConfigPath() + "todo.txt");
         PrintWriter out = new PrintWriter(newFile);
         Iterator<RavTodoItem> iter = todoList.iterator();
         while (iter.hasNext()){
@@ -215,14 +228,14 @@ public class RavTodo implements Iterable{
     }
 
     public void archiveTasks() throws IOException {
-        File todoFile = new File(properties.getProperty("todo.path") + "/todo.txt");
-        Path path = todoFile.toPath();
-        Files.move(path, path.resolveSibling("todo.bak"), REPLACE_EXISTING);
-        File file = new File(properties.getProperty("todo.path") + "/done.txt");
-        path = file.toPath();
-        Files.copy(path, path.resolveSibling("done.bak"), REPLACE_EXISTING);
-        FileWriter newFile = new FileWriter(properties.getProperty("todo.path") + "/todo.txt");
-        FileWriter doneFile = new FileWriter(properties.getProperty("todo.path") + "/done.txt", true);
+        File todoFile = new File(getConfigPath() + "todo.txt");
+        Path todopath = todoFile.toPath();
+        Files.move(todopath, todopath.resolveSibling("todo.bak"), REPLACE_EXISTING);
+        File file = new File(getConfigPath() + "done.txt");
+        todopath = file.toPath();
+        Files.copy(todopath, todopath.resolveSibling("done.bak"), REPLACE_EXISTING);
+        FileWriter newFile = new FileWriter(getConfigPath() + "todo.txt");
+        FileWriter doneFile = new FileWriter(getConfigPath() + "done.txt", true);
         PrintWriter outDone = new PrintWriter(doneFile);
         PrintWriter outTodo = new PrintWriter(newFile);
 
@@ -244,14 +257,115 @@ public class RavTodo implements Iterable{
         outTodo.close();
     }
 
-    public void findNextActions(){
+    public void findNextActions() throws IOException {
         File path = new File(properties.getProperty("todo.path"));
-        String[] files = path.list((lamFolder, lamName) -> lamName.matches(".*\\.ol\\.txt"));
+        String[] outlines = path.list((lamFolder, lamName) -> lamName.matches(".*\\.ol\\.txt"));
+        String extension = "(.*)\\.ol\\.txt";
+        Pattern regex = Pattern.compile(extension);
+        Matcher matcher;
+        String oName;
+        boolean findFlag = false;
 
-        for (String fName : files) {
-            System.out.println(fName);
+        for (String fName : outlines) {
+            matcher = regex.matcher(fName);
+            if (matcher.find()) {
+                oName = matcher.group(1);
+                findFlag = false;
+                for (RavTodoItem t : todoList) {
+                    if (!t.isTodoComplete() && t.isPartOfOutline() && t.getOutline().equals(oName)) {
+                        findFlag = true;
+                        break;
+                    }
+                }
+                if (!findFlag) {
+                    System.out.println(oName + " has next actions!");
+                    getNextTask(oName);
+                }
+            }
         }
     }
+
+    private void getNextTask(String fName) throws IOException {
+        File outline = new File(getConfigPath() + fName + ".ol.txt");
+        Scanner scnr = new Scanner(outline);
+        ArrayList<String> items = new ArrayList<>();
+        while (scnr.hasNextLine()) {
+            items.add(scnr.nextLine());
+        }
+        scnr.close();
+        if (items.size() > 0) {
+            Path outlinePath = outline.toPath();
+            Files.move(outlinePath, outlinePath.resolveSibling(fName + "ol.bak"), REPLACE_EXISTING);
+            File newOutline = new File(getConfigPath() + fName + ".ol.txt");
+            PrintWriter out = new PrintWriter(newOutline);
+            String prev = "";
+            String current = "";
+            int pTabs = -1;
+            int cTabs = 0;
+            boolean flag = false;
+            for (int i = 0; i < items.size(); i++) {
+                if (!flag) {
+                    if (i + 1 < items.size()) {
+                        pTabs = countTabs(items.get(i));
+                        cTabs = countTabs(items.get(i + 1));
+                        if (pTabs >= cTabs) {
+                            addTask(new RavTodoItem(999, items.get(i).trim() + " outline:" + fName));
+                            flag = true;
+                        } else {
+                            out.println(items.get(i));
+                        }
+                    } else {
+                        addTask(new RavTodoItem(999, items.get(i).trim() + " outline:" + fName));
+                        flag = true;
+                    }
+                } else {
+                    out.println(items.get(i));
+                }
+            }
+            out.close();
+        } else {
+            System.out.println(fName + " is empty, removing file.");
+            Files.delete(outline.toPath());
+        }
+    }
+
+    private int countTabs(String str) {
+        String searchString = "^\\t(.*)";
+        Pattern regex = Pattern.compile(searchString);
+        Matcher matcher = regex.matcher(str);
+        if (matcher.find()){
+            return 1 + countTabs(matcher.group(1));
+        } else {
+            return 0;
+        }
+    }
+
+    public void processInbox() throws IOException {
+        Console con = System.console();
+        ArrayList<String> newTasks = new ArrayList<>();
+
+        if (con == null) {
+            System.out.println("No console available!");
+        } else {
+            con.printf("Add @context and +tags: %n");
+            for (RavTodoItem t : todoList) {
+                if (t.hasContext("@inbox")) {
+                    String str = con.readLine(t.getDescription() + ": ");
+                    newTasks.add(t.getDescription() + " " + str);
+                    t.markComplete();
+                }
+            }
+
+            for (String s : newTasks) {
+                addTask(new RavTodoItem(999, s));
+            }
+            writeTodoFile();
+        }
+
+
+
+    }
+
 }
 
 
