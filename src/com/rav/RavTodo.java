@@ -109,6 +109,21 @@ public class RavTodo {
                     }
                     break;
 
+                case "vj":
+                    if (args.length > 1) {
+                        matcher = numRegex.matcher(args[1]);
+                        if (matcher.find()){
+                            try {
+                                todo.showJournalEntries(Integer.valueOf(args[1]));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } else {
+                        todo.printUsage();
+                    }
+                    break;
+
                 default: {
                     System.out.println("Unknown command.");
                     todo.printUsage();
@@ -230,7 +245,8 @@ public class RavTodo {
         System.out.format("%10s %s%n", "archive", "Archive completed todos into done.txt");
         System.out.format("%10s %s%n", "next", "Scan outlines for next actions");
         System.out.format("%10s %s%n", "process", "Process GTD inbox");
-        System.out.format("%10s %s%n", "j", "Add journal entry");
+        System.out.format("%10s %s%n", "j <text>", "Add journal entry");
+        System.out.format("%10s %s%n", "vj <text>", "View journal entries, if a number will show the latest n");
     }
 
 
@@ -486,7 +502,24 @@ public class RavTodo {
         String formattedDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         out.println(formattedDate + ": " + str);
         out.close();
+    }
 
+    public void showJournalEntries(int n) throws FileNotFoundException {
+        File journalFile = new File(getConfigPath() + "journal.txt");
+        Scanner scnr = new Scanner(journalFile);
+        ArrayList<String> entries = new ArrayList<>();
+        while (scnr.hasNextLine()){
+            entries.add(scnr.nextLine());
+        }
+        int length;
+        if (n >= entries.size()){
+            length = 0;
+        } else {
+            length = entries.size() - n;
+        }
+        for (int i = length; i < entries.size(); i++) {
+            System.out.println(entries.get(i));
+        }
     }
 
 }
