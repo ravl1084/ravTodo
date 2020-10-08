@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -87,6 +88,18 @@ public class RavTodo {
                         todo.processInbox();
                     } catch (IOException e) {
                         e.printStackTrace();
+                    }
+                    break;
+
+                case "j":
+                    if (args.length > 1) {
+                        try {
+                            todo.addJournalEntry(args[1]);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        todo.printUsage();
                     }
                     break;
 
@@ -211,6 +224,7 @@ public class RavTodo {
         System.out.format("%10s %s%n", "archive", "Archive completed todos into done.txt");
         System.out.format("%10s %s%n", "next", "Scan outlines for next actions");
         System.out.format("%10s %s%n", "process", "Process GTD inbox");
+        System.out.format("%10s %s%n", "j", "Add journal entry");
     }
 
 
@@ -453,8 +467,19 @@ public class RavTodo {
             }
             writeTodoFile();
         }
+    }
 
+    public void addJournalEntry(String str) throws IOException {
+        File journalFile = new File(getConfigPath() + "journal.txt");
+        Path journalPath = journalFile.toPath();
+        Files.copy(journalPath, journalPath.resolveSibling("journal.bak"), REPLACE_EXISTING);
+        FileWriter journal = new FileWriter(getConfigPath() + "journal.txt", true);
+        PrintWriter out = new PrintWriter(journal);
 
+        LocalDate today = LocalDate.now();
+        String formattedDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        out.println(formattedDate + ": " + str);
+        out.close();
 
     }
 
