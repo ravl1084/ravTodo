@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -93,8 +94,13 @@ public class RavTodo {
 
                 case "j":
                     if (args.length > 1) {
+                        String[] terms = Arrays.copyOfRange(args, 1, args.length);
+                        String journalString = "";
+                        for (int i = 0; i < terms.length; i++) {
+                            journalString += terms[i] + " ";
+                        }
                         try {
-                            todo.addJournalEntry(args[1]);
+                            todo.addJournalEntry(journalString);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -476,7 +482,7 @@ public class RavTodo {
         FileWriter journal = new FileWriter(getConfigPath() + "journal.txt", true);
         PrintWriter out = new PrintWriter(journal);
 
-        LocalDate today = LocalDate.now();
+        LocalDateTime today = LocalDateTime.now();
         String formattedDate = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         out.println(formattedDate + ": " + str);
         out.close();
