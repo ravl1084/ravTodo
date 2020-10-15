@@ -106,43 +106,47 @@ public class RavTodoItem {
         AnsiFormat projFormat = new AnsiFormat(Attribute.CYAN_TEXT());
         AnsiFormat contFormat = new AnsiFormat(Attribute.GREEN_TEXT());
         AnsiFormat outlineFormat = new AnsiFormat(Attribute.BLUE_TEXT());
-        if (isComplete) {
-            System.out.println(colorize(String.format("%3d %s", this.index, description.trim()), Attribute.STRIKETHROUGH()));
-        } else {
+        String display = "";
+        if (!isComplete) {
             switch (priority) {
                 case "A":
-                    System.out.print(priA.format(String.format("%3d %s", this.index, "(" + priority + ") ")));
+                    display += priA.format(String.format("%3d %s", this.index, "(" + priority + ") "));
                     break;
 
                 case "B":
-                    System.out.print(priB.format(String.format("%3d %s", this.index, "(" + priority + ") ")));
+                    display += priB.format(String.format("%3d %s", this.index, "(" + priority + ") "));
                     break;
 
                 case "C":
-                    System.out.print(priC.format(String.format("%3d %s", this.index, "(" + priority + ") ")));
+                    display += priC.format(String.format("%3d %s", this.index, "(" + priority + ") "));
                     break;
 
                 default:
-                    System.out.print(String.format("%3d %s", this.index, ""));
+                    display += String.format("%3d %s", this.index, "");
                     break;
             }
-
-            System.out.print(description.trim() + " ");
-
-            for (String p : projects) {
-                System.out.print(projFormat.format(p + " "));
-            }
-
-            for (String c : contexts) {
-                System.out.print(contFormat.format(c + " "));
-            }
-
-            if (isPartOfOutline()) {
-                System.out.print(outlineFormat.format("outline:" + getOutline() + " "));
-            }
-
-            System.out.println();
         }
+
+            display += description.trim() + " ";
+
+        for (String p : projects) {
+            display += projFormat.format(p + " ");
+        }
+
+        for (String c : contexts) {
+            display += contFormat.format(c + " ");
+        }
+
+        if (isPartOfOutline()) {
+            display += outlineFormat.format("outline:" + getOutline() + " ");
+        }
+
+        if (isComplete) {
+            System.out.println(colorize(String.format("%3d %s", this.index, display), Attribute.STRIKETHROUGH()));
+        } else {
+            System.out.println(display);
+        }
+
     }
 
     /**
