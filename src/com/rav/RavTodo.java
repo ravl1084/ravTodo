@@ -402,34 +402,47 @@ public class RavTodo {
     private void getNextTask(String fName) throws IOException {
         File outline = new File(getConfigPath() + fName + ".ol.txt");
         Scanner scnr = new Scanner(outline);
+        String contextString = "(.*)(\\+\\+\\w+)(.*)";
+        String projectString = "(.*)(\\@\\@\\w+)(.*)";
+        Pattern contextRegex = Pattern.compile(contextString);
+        Pattern projectRegex = Pattern.compile(projectString);
+        Matcher matcher;
         ArrayList<String> items = new ArrayList<>();
         while (scnr.hasNextLine()) {
             items.add(scnr.nextLine());
         }
         scnr.close();
+        String parentProject = "";
+        String parentContext = "";
         if (items.size() > 0) {
             Path outlinePath = outline.toPath();
-            Files.move(outlinePath, outlinePath.resolveSibling(fName + "ol.bak"), REPLACE_EXISTING);
+            Files.move(outlinePath, outlinePath.resolveSibling(fName + ".ol.bak"), REPLACE_EXISTING);
             File newOutline = new File(getConfigPath() + fName + ".ol.txt");
             PrintWriter out = new PrintWriter(newOutline);
-            String prev = "";
-            String current = "";
             int pTabs = -1;
             int cTabs = 0;
             boolean flag = false;
             for (int i = 0; i < items.size(); i++) {
+                matcher = projectRegex.matcher(items.get(i));
+                if (matcher.find()) {
+                    parentProject += matcher.group(2).substring(1);
+                }
+                matcher = contextRegex.matcher(items.get(i));
+                if (matcher.find()){
+                    parentContext += matcher.group(2).substring(1);
+                }
                 if (!flag) {
                     if (i + 1 < items.size()) {
                         pTabs = countTabs(items.get(i));
                         cTabs = countTabs(items.get(i + 1));
                         if (pTabs >= cTabs) {
-                            addTask(new RavTodoItem(999, items.get(i).trim() + " outline:" + fName));
+                            addTask(new RavTodoItem(999, items.get(i).trim() + " " + parentProject + " " + parentContext + " outline:" + fName));
                             flag = true;
                         } else {
                             out.println(items.get(i));
                         }
                     } else {
-                        addTask(new RavTodoItem(999, items.get(i).trim() + " outline:" + fName));
+                        addTask(new RavTodoItem(999, items.get(i).trim() + " " + parentProject + " " + parentContext  + " outline:" + fName));
                         flag = true;
                     }
                 } else {
