@@ -119,10 +119,15 @@ public class RavTodo {
                                 e.printStackTrace();
                             }
                         }
+                        //TODO: implement test search of journal
                     } else {
                         todo.printUsage();
                     }
                     break;
+
+                //TODO: implement schedule command
+
+                //TODO: implement pri command
 
                 default: {
                     System.out.println("Unknown command.");

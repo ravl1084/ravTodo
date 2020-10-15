@@ -105,8 +105,9 @@ public class RavTodoItem {
         AnsiFormat priC = new AnsiFormat(Attribute.TEXT_COLOR(11));
         AnsiFormat projFormat = new AnsiFormat(Attribute.CYAN_TEXT());
         AnsiFormat contFormat = new AnsiFormat(Attribute.GREEN_TEXT());
+        AnsiFormat outlineFormat = new AnsiFormat(Attribute.BLUE_TEXT());
         if (isComplete) {
-            System.out.println(colorize(String.format("%3d %s", this.index, getRawLine()), Attribute.STRIKETHROUGH()));
+            System.out.println(colorize(String.format("%3d %s", this.index, description.trim()), Attribute.STRIKETHROUGH()));
         } else {
             switch (priority) {
                 case "A":
@@ -134,6 +135,10 @@ public class RavTodoItem {
 
             for (String c : contexts) {
                 System.out.print(contFormat.format(c + " "));
+            }
+
+            if (isPartOfOutline()) {
+                System.out.print(outlineFormat.format("outline:" + getOutline() + " "));
             }
 
             System.out.println();
