@@ -33,6 +33,7 @@ public class RavTodoItem {
     private boolean relative;
     private boolean hasDue;
     private boolean hasThreshold;
+    private boolean isOverdue = false;
     private int index;
     private String outline;
     private boolean hasOutline;
@@ -83,15 +84,18 @@ public class RavTodoItem {
         public int compare(RavTodoItem ravTodoItem, RavTodoItem t1) {
             String pri1 = ravTodoItem.getPriority();
             String pri2 = t1.getPriority();
-            LocalDate due1 = ravTodoItem.getCreatedDate();
-            LocalDate due2 = t1.getCreatedDate();
+            LocalDate due1 = ravTodoItem.getDueDate();
+            LocalDate due2 = t1.getDueDate();
+            LocalDate created1 = ravTodoItem.getCreatedDate();
+            LocalDate created2 = t1.getCreatedDate();
             int comp1 = ravTodoItem.isTodoComplete()?-5000:50;
             int comp2 = t1.isTodoComplete()?-5000:50;
             int priCompare = pri1.compareTo(pri2);
             int dueCompare = due1.compareTo(due2);
+            int createCompare = created1.compareTo(created2);
             int compCompare = comp2 - comp1;
 
-            return priCompare*10 + dueCompare + compCompare;
+            return priCompare*10 + dueCompare + createCompare + compCompare;
         }
     };
 
@@ -106,6 +110,7 @@ public class RavTodoItem {
         AnsiFormat projFormat = new AnsiFormat(Attribute.CYAN_TEXT());
         AnsiFormat contFormat = new AnsiFormat(Attribute.GREEN_TEXT());
         AnsiFormat outlineFormat = new AnsiFormat(Attribute.BLUE_TEXT());
+        AnsiFormat overdueFormat = new AnsiFormat(Attribute.RED_BACK());
         String display = "";
         if (!isComplete) {
             switch (priority) {
@@ -125,9 +130,14 @@ public class RavTodoItem {
                     display += String.format("%3d %s", this.index, "");
                     break;
             }
+
         }
 
+        if (!isComplete && isOverdue){
+            display += overdueFormat.format(description.trim() + "");
+        } else {
             display += description.trim() + " ";
+        }
 
         for (String p : projects) {
             display += projFormat.format(p + " ");
@@ -338,6 +348,12 @@ public class RavTodoItem {
             dueDate = LocalDate.parse("2999-12-31");
             hasDue = false;
         }
+
+        if (dueDate.isBefore(LocalDate.now())) {
+            isOverdue = true;
+        } else {
+            isOverdue = false;
+        }
     }
 
     /**
@@ -418,22 +434,28 @@ public class RavTodoItem {
     public RavTodoItem createNext() {
         RavTodoItem t = new RavTodoItem(999, rawLine);
         LocalDate today = LocalDate.now();
+        LocalDate future = LocalDate.parse("2999-12-31");
         if (t.isRelative()){
             switch (unit) {
                 case "d":
                     t.setThresholdDate(today.plusDays(period));
+                    if (t.usesDue()) t.setDueDate(today.plusDays(period));
                     break;
 
                 case "w":
                     t.setThresholdDate(today.plusWeeks(period));
+                    if (t.usesDue()) t.setDueDate(today.plusWeeks(period));
                     break;
 
                 case "m":
                     t.setThresholdDate(today.plusMonths(period));
+                    if (t.usesDue()) t.setDueDate(today.plusMonths(period));
                     break;
 
                 case "y":
                     t.setThresholdDate(today.plusYears(period));
+                    if (t.usesDue()) t.setDueDate(today.plusYears(period));
+                    break;
             }
         } else {
             if (t.usesThreshold()) {
