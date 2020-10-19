@@ -287,6 +287,7 @@ public class RavTodo {
         System.out.format("%10s %s%n", "add <text>", "Add a todo");
         System.out.format("%10s %s%n", "do <id>", "Mark a todo as complete");
         System.out.format("%10s %s%n", "archive", "Archive completed todos into done.txt");
+        System.out.format("%10s %s%n", "schedule <id> <YYYY-MM-DD>", "Set threshold date for todo");
         System.out.format("%10s %s%n", "next", "Scan outlines for next actions");
         System.out.format("%10s %s%n", "process", "Process GTD inbox");
         System.out.format("%10s %s%n", "j <text>", "Add journal entry");
