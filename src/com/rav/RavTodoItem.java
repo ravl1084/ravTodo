@@ -328,6 +328,8 @@ public class RavTodoItem {
      */
     public void setThresholdDate(LocalDate date) {
         this.thresholdDate = date;
+        this.hasThreshold = true;
+        updateRawLine();
     }
 
     /**

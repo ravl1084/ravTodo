@@ -23,6 +23,8 @@ public class RavTodo {
     public static void main(String args[]) {
         RavTodo todo = new RavTodo();
         String numString = "\\d+";
+        String schedString = "(\\d+) (\\d{4}-\\d{2}-\\d{2})";
+        Pattern schedRegex = Pattern.compile(schedString);
         Pattern numRegex = Pattern.compile(numString);
         Matcher matcher;
         if (args.length > 0){
@@ -119,14 +121,34 @@ public class RavTodo {
                                 e.printStackTrace();
                             }
                         }
-                        //TODO: implement test search of journal
+                        //TODO: implement text search of journal
                     } else {
                         todo.printUsage();
                     }
                     break;
 
                 //TODO: implement schedule command
-
+                case "schedule":
+                    if (args.length > 1) {
+                        String[] terms = Arrays.copyOfRange(args, 1, args.length);
+                        String checkString = "";
+                        for (int i = 0; i < terms.length; i++) {
+                            checkString += terms[i] + " ";
+                        }
+                        matcher = schedRegex.matcher(checkString);
+                        if (matcher.find()) {
+                            try {
+                                todo.scheduleTask(Integer.valueOf(matcher.group(1)), matcher.group(2));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            todo.printUsage();
+                        }
+                    } else {
+                        todo.printUsage();
+                    }
+                    break;
                 //TODO: implement pri command
 
                 default: {
@@ -139,6 +161,23 @@ public class RavTodo {
         } else {
             todo.printUsage();
         }
+    }
+
+    private void scheduleTask(Integer idx, String dt) throws IOException {
+        RavTodoItem task = null;
+        try {
+            task = getTask(idx);
+        } catch (RavTodoNotFoundException e) {
+            System.out.println("Task not found.");
+            e.printStackTrace();
+        }
+        LocalDate newDate = LocalDate.parse(dt);
+        task.setThresholdDate(newDate);
+        writeTodoFile();
+
+        System.out.println(task.getRawLine());
+        System.out.println("Task scheduled for " + newDate);
+
     }
 
     public RavTodo() {
