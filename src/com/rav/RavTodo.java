@@ -127,7 +127,6 @@ public class RavTodo {
                     }
                     break;
 
-                //TODO: implement schedule command
                 case "schedule":
                     if (args.length > 1) {
                         String[] terms = Arrays.copyOfRange(args, 1, args.length);

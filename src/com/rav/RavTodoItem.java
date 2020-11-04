@@ -152,7 +152,7 @@ public class RavTodoItem {
         }
 
         if (isComplete) {
-            System.out.println(colorize(String.format("%3d %s", this.index, display), Attribute.STRIKETHROUGH()));
+            System.out.println(colorize(String.format("%3d %s", this.index, display), Attribute.STRIKETHROUGH(), Attribute.TEXT_COLOR(50, 50, 50)));
         } else {
             System.out.println(display);
         }
